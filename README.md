@@ -1,6 +1,4 @@
-Just getting started...
-
-Making some progress!
+ENU - DevOps - Group 04
 
 ![workflow](https://github.com/ASmokeyPie/devops-G04/actions/workflows/main.yml/badge.svg)
 
