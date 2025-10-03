@@ -10,4 +10,4 @@ RELEASE [![Releases](https://img.shields.io/github/release/ASmokeyPie/devops-G04
 
 v1.0 - Basic setup. Project can build to self-contained JAR with Maven. Workflow and branches (master, release, develop) created. JAR and Docker work with GitHub Actions.
 
-This project goal is to design and implement a system utilising an SQL database to provide various pieces of information about the worlds population.
+This project goal is to design and implement a system utilising an SQL database to provide various pieces of information about the worlds population
