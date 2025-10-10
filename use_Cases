@@ -1,0 +1,23 @@
+User Case: Select a dropdown menu option
+
+Actors: User
+
+Goal: Allow the user to view the options of the menu and select one
+
+Preconditions: User is on the page that contains a dropdown menu and the dropdown menu is loaded and visible.
+
+Postconditions: The system or website registers the selected option and updates the interface if an error occurs no option is selected and the system prompts to try again. 
+
+Main Flow: 
+1. The user navigates to the page containing the dropdown menu
+2. User clicks on the dropdown menu
+3. The system expands the menu and displays the list of avalible options
+4. User selects one option from the list 
+5. System registers the option and updates the interface of the user. 
+
+User Case: Generate Counrty Report 
+User Case: Generate City Report 
+User Case: Generate Capital City Report
+User Case: Generate Population Report 
+
+
