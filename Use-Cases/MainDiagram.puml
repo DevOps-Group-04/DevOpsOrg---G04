@@ -1,7 +1,8 @@
 @startuml
-'https://plantuml.com/use-case-diagram
+!pragma useCaseDiagram true
+left to right direction
 
-actor user as "Organisation worker"
+actor "Organisation worker" as user
 
 rectangle "Application" {
     usecase menu as "Select option from menu"
@@ -9,19 +10,24 @@ rectangle "Application" {
     usecase city as "Generate city report"
     usecase capital as "Generate capital city report"
     usecase population as "Generate population report"
-
-    rectangle db as "Database"
+    usecase showdata as "Show data from database"
 }
 
-user -- menu
-menu --> country
-menu --> city
-menu --> capital
-menu --> population
+database "Database" as db
 
-country .. db : Include
-city .. db : Include
-capital .. db : Include
-population .. db : Include
+' Relationships
+user --> menu
+
+menu .> country : <<extend>>
+menu .> city : <<extend>>
+menu .> capital : <<extend>>
+menu .> population : <<extend>>
+
+country ..> showdata : <<include>>
+city ..> showdata : <<include>>
+capital ..> showdata : <<include>>
+population ..> showdata : <<include>>
+
+showdata <-- db
 
 @enduml
