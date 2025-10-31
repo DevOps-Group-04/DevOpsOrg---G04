@@ -6,7 +6,8 @@ public class App
 {
     public static void main(String[] args)
     {
-        try
+        countryReport.getScope();
+        /*try
         {
             // Load Database driver
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -57,6 +58,6 @@ public class App
             {
                 System.out.println("Error closing connection to database");
             }
-        }
+        }*/
     }
 }
