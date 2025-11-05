@@ -41,7 +41,7 @@ public class App
                         "example"
                 );
                 System.out.println("Successfully connected");
-                // SWAP URL FOR THIS WHEN WORKING LOCALLY --> "jdbc:mysql://localhost:33060/employees?allowPublicKeyRetrieval=true&useSSL=false",
+                // SWAP URL FOR THIS WHEN WORKING LOCALLY --> "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
                 break;
             }
             catch (SQLException sqle)
