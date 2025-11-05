@@ -35,13 +35,14 @@ public class App
                 // Wait a bit for db to start
                 Thread.sleep(30000);
                 // Connect to database
+                // SWAP URL FOR THIS WHEN WORKING LOCALLY --> "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
                 con = DriverManager.getConnection(
                         "jdbc:mysql://db:3306/world?allowPublicKeyRetrieval=true&useSSL=false",
                         "root",
                         "example"
                 );
                 System.out.println("Successfully connected");
-                // SWAP URL FOR THIS WHEN WORKING LOCALLY --> "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
+
                 break;
             }
             catch (SQLException sqle)
