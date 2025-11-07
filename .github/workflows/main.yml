@@ -36,24 +36,24 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Check out your repository
+      # Check out repository
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Set up Java (Adoptium Temurin 17)
+      # Set up Java (Temurin 17)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Build your JAR file with Maven
+      # Build JAR file with Maven
       - name: Package with Maven
         run: mvn -B clean package
 
-      # Set up Docker Buildx (optional but good practice)
+      # Set up Docker Buildx (optional)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -63,11 +63,11 @@ jobs:
           docker --version
           docker compose version
 
-      # Build your Docker images (app + db)
+      # Build Docker images (app + db)
       - name: Build Docker Compose services
         run: docker compose build
 
-      # Run your containers (will exit when app stops)
+      # Run containers (will exit when app stops)
       - name: Run Docker Compose
         run: docker compose up --abort-on-container-exit
 
