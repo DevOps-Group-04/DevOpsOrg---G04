@@ -77,6 +77,48 @@ public class App
         }
     }
 
+    /**
+     * Executes a query and prints results to console.
+     */
+    public void executeAndDisplay(String sql) {
+        if (con == null) {
+            System.out.println("No active database connection.");
+            return;
+        }
+
+        try (Statement stmt = con.createStatement()) {
+            boolean hasResultSet = stmt.execute(sql);
+
+            if (hasResultSet) {
+                ResultSet rs = stmt.getResultSet();
+                ResultSetMetaData meta = rs.getMetaData();
+                int columnCount = meta.getColumnCount();
+
+                // Print column headers
+                for (int i = 1; i <= columnCount; i++) {
+                    System.out.print(meta.getColumnName(i) + "\t");
+                }
+                System.out.println("\n" + "-".repeat(60));
+
+                // Print each row
+                while (rs.next()) {
+                    for (int i = 1; i <= columnCount; i++) {
+                        System.out.print(rs.getString(i) + "\t");
+                    }
+                    System.out.println();
+                }
+
+                rs.close();
+            } else {
+                int updateCount = stmt.getUpdateCount();
+                System.out.println("Query executed successfully. " + updateCount + " rows affected.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error executing query: " + e.getMessage());
+        }
+    }
+
+
     public static void main(String[] args)
     {
 
@@ -85,6 +127,11 @@ public class App
 
         // Connect to database
         a.connect();
+
+        String sql = countryReport.getScope();
+
+        // Execute and display
+        a.executeAndDisplay(sql);
 
         // Disconnect from database
         a.disconnect();

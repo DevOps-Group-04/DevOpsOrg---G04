@@ -13,7 +13,7 @@ public class countryReport {
     }
 
     // ===== Interface for user input =====
-    public static void getScope() {
+    public static String getScope() {
         int scopeID = 0;
         int parameter = -1;
         Scanner input = new Scanner(System.in);
@@ -97,7 +97,7 @@ public class countryReport {
             default -> "Invalid scopeID. Please enter a valid report number.";
         };
 
-        System.out.println("\nGenerated SQL:\n" + sql);
+        return sql;
     }
 
     // ===== COUNTRIES =====

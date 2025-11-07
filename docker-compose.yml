@@ -6,6 +6,14 @@ services:
     build: .
     depends_on:
       - db
+    stdin_open: true
+    tty: true
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=world
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=example
 
   # Build the db as name db from the Dockerfile in the db folder
   # exposing the port if we want to run code outside a container
