@@ -37,6 +37,7 @@ public class App
                 // Connect to database
                 // SWAP URL FOR THIS WHEN WORKING LOCALLY --> "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
                 con = DriverManager.getConnection(
+                        //"jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
                         "jdbc:mysql://db:3306/world?allowPublicKeyRetrieval=true&useSSL=false",
                         "root",
                         "example"
