@@ -9,7 +9,11 @@ public class countryReport {
             // Replace only 'LIMIT ?' (not other ? placeholders)
             return sql.replaceAll("(?i)LIMIT\\s*\\?", "LIMIT " + n);
         }
-        return sql;
+        else
+        {
+            // Replace only 'LIMIT ?' (not other ? placeholders)
+            return sql.replaceAll("(?i)LIMIT\\s*\\?", "LIMIT " + 200);
+        }
     }
 
     // ===== Interface for user input =====
@@ -21,8 +25,14 @@ public class countryReport {
 
         while (!isValid) {
             try {
-                System.out.print("Enter a value between 1 and 32. If a specific parameter is needed, add it with '_': ");
-                String userInput = input.next();
+                System.out.print("Enter a value between 1 and 32 (or press Enter for all reports with limit 200). If a specific parameter is needed, add it with '_': ");
+                String userInput = input.nextLine().trim();
+
+                // Handle empty input - run all reports with limit 200
+                if (userInput.isEmpty()) {
+                    System.out.println("Running all reports with limit of 200...\n");
+                    generateAllReports();
+                }
 
                 if (userInput.contains("_")) {
                     String[] parts = userInput.split("_");
@@ -98,6 +108,61 @@ public class countryReport {
         };
 
         return sql;
+    }
+
+    // New method to generate all reports with a specified limit
+    private static void generateAllReports() {
+        for (int i = 1; i <32; i++)
+        {
+            String sql = switch (i) {
+                // ===== COUNTRIES =====
+                case 1 -> reportAllCountriesByPopulationWorld();
+                case 2 -> reportAllCountriesByPopulationContinent();
+                case 3 -> reportAllCountriesByPopulationRegion();
+                case 4 -> reportTopNCountriesByPopulationWorld(200);
+                case 5 -> reportTopNCountriesByPopulationContinent(200);
+                case 6 -> reportTopNCountriesByPopulationRegion(200);
+
+                // ===== CITIES =====
+                case 7 -> reportAllCitiesByPopulationWorld();
+                case 8 -> reportAllCitiesByPopulationContinent();
+                case 9 -> reportAllCitiesByPopulationRegion();
+                case 10 -> reportAllCitiesByPopulationCountry();
+                case 11 -> reportAllCitiesByPopulationDistrict();
+                case 12 -> reportTopNCitiesByPopulationWorld(200);
+                case 13 -> reportTopNCitiesByPopulationContinent(200);
+                case 14 -> reportTopNCitiesByPopulationRegion(200);
+                case 15 -> reportTopNCitiesByPopulationCountry(200);
+                case 16 -> reportTopNCitiesByPopulationDistrict(200);
+
+                // ===== CAPITAL CITIES =====
+                case 17 -> reportAllCapitalCitiesByPopulationWorld();
+                case 18 -> reportAllCapitalCitiesByPopulationContinent();
+                case 19 -> reportAllCapitalCitiesByPopulationRegion();
+                case 20 -> reportTopNCapitalCitiesByPopulationWorld(200);
+                case 21 -> reportTopNCapitalCitiesByPopulationContinent(200);
+                case 22 -> reportTopNCapitalCitiesByPopulationRegion(200);
+
+                // ===== POPULATION DISTRIBUTIONS =====
+                case 23 -> reportPopulationInEachContinent();
+                case 24 -> reportPopulationInEachRegion();
+                case 25 -> reportPopulationInEachCountry();
+
+                // ===== SPECIFIC POPULATIONS =====
+                case 26 -> reportWorldPopulation();
+                case 27 -> reportPopulationByContinent();
+                case 28 -> reportPopulationByRegion();
+                case 29 -> reportPopulationByCountry();
+                case 30 -> reportPopulationByDistrict();
+                case 31 -> reportPopulationByCity();
+
+                // ===== LANGUAGE POPULATIONS =====
+                case 32 -> reportLanguageSpeakers();
+
+                default -> throw new IllegalStateException("Unexpected value: " + i);
+            };
+
+        }
     }
 
     // ===== COUNTRIES =====
