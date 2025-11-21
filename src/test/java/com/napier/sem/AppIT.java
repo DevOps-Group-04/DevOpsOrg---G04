@@ -6,7 +6,7 @@ import java.sql.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class appIT {
+public class AppIT {
 
     private Connection con;
 

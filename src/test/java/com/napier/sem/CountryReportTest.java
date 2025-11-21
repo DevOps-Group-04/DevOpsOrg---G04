@@ -3,7 +3,7 @@ package com.napier.sem;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class countryReportTest {
+public class CountryReportTest {
 
     @Test
     void testApplyLimitParameter_ReplacesPlaceholder() {
