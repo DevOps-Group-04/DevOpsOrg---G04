@@ -31,9 +31,100 @@ name: Build and Test with Docker Compose
 on: [push]
 
 jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Run unit tests (exclude *IT)
+        run: mvn -B -Dtest='*UT, *Test' -DfailIfNoTests=false test
+
+      - name: Display surefire test reports
+        if: always()
+        run: |
+          echo "==== UNIT TEST REPORTS ===="
+          find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \; || true
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: target/surefire-reports
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-22.04
+
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: example
+          MYSQL_DATABASE: world
+        ports:
+          - 33060:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Wait for MySQL readiness
+        run: |
+          for i in {1..60}; do
+            if mysql -h 127.0.0.1 -P 33060 -uroot -pexample -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MySQL is ready"; break
+            fi
+            echo "Waiting for MySQL... ($i/60)"
+            sleep 2
+          done
+
+      - name: Load world schema/data
+        run: mysql -h 127.0.0.1 -P 33060 -uroot -pexample < db/world.sql
+
+      - name: Run integration tests only (*IT)
+        run: mvn -B -Dtest='*IT' -DfailIfNoTests=false test
+
+      - name: Display surefire test reports
+        if: always()
+        run: |
+          echo "==== INTEGRATION TEST REPORTS ===="
+          find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \; || true
+
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
+          path: target/surefire-reports
+
   build:
     name: Build and Run Containers
     runs-on: ubuntu-22.04
+    needs: [unit-tests, integration-tests]
 
     steps:
       # Check out repository

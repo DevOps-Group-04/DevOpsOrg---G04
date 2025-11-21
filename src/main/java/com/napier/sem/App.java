@@ -1,197 +1,75 @@
 package com.napier.sem;
 
-import java.sql.*;
+/**
+ * Main application entry point
+ * This class provides backward compatibility with the original App structure
+ */
+public class App {
 
-public class App
-{
+    private DatabaseConnection db;
 
-    /**
-     * Connection to MySQL database.
-     */
-    private Connection con = null;
-
-    /**
-     * Connect to the MySQL database.
-     */
-    public void connect()
-    {
-        try
-        {
-            // Load Database driver
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        }
-        catch (ClassNotFoundException e)
-        {
-            System.out.println("Could not load SQL driver");
-            System.exit(-1);
-        }
-
-        int retries = 10;
-        for (int i = 0; i < retries; ++i)
-        {
-            System.out.println("Connecting to database...");
-            try
-            {
-                // Wait a bit for db to start
-                Thread.sleep(30000);
-                // Connect to database
-                // SWAP URL FOR THIS WHEN WORKING LOCALLY --> "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
-                con = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false",
-                        //"jdbc:mysql://db:3306/world?allowPublicKeyRetrieval=true&useSSL=false",
-                        "root",
-                        "example"
-                );
-                System.out.println("Successfully connected");
-
-                break;
-            }
-            catch (SQLException sqle)
-            {
-                System.out.println("Failed to connect to database attempt " + Integer.toString(i));
-                System.out.println(sqle.getMessage());
-            }
-            catch (InterruptedException ie)
-            {
-                System.out.println("Thread interrupted? Should not happen.");
-            }
-        }
+    public App() {
+        this.db = new DatabaseConnection();
     }
 
     /**
-     * Disconnect from the MySQL database.
+     * Connect to the MySQL database
+     * Uses local connection by default
      */
-    public void disconnect()
-    {
-        if (con != null)
-        {
-            try
-            {
-                // Close connection
-                con.close();
-            }
-            catch (Exception e)
-            {
-                System.out.println("Error closing connection to database");
-            }
-        }
+    public void connect() {
+        connect(true);
     }
 
     /**
-     * Executes a query and prints results to console.
+     * Connect to the MySQL database
+     * @param useLocal true for local connection, false for Docker
+     */
+    public void connect(boolean useLocal) {
+        db.connect(useLocal);
+    }
+
+    /**
+     * Disconnect from the MySQL database
+     */
+    public void disconnect() {
+        db.disconnect();
+    }
+
+    /**
+     * Execute a query and display results
      */
     public void executeAndDisplay(String sql) {
-        if (con == null) {
-            System.out.println("No active database connection.");
-            return;
-        }
-
-        try (Statement stmt = con.createStatement()) {
-            boolean hasResultSet = stmt.execute(sql);
-
-            if (hasResultSet) {
-                ResultSet rs = stmt.getResultSet();
-                ResultSetMetaData meta = rs.getMetaData();
-                int columnCount = meta.getColumnCount();
-
-                // Print column headers
-                for (int i = 1; i <= columnCount; i++) {
-                    System.out.print(meta.getColumnName(i) + "\t");
-                }
-                System.out.println("\n" + "-".repeat(60));
-
-                // Print each row
-                while (rs.next()) {
-                    for (int i = 1; i <= columnCount; i++) {
-                        System.out.print(rs.getString(i) + "\t");
-                    }
-                    System.out.println();
-                }
-
-                rs.close();
-            } else {
-                int updateCount = stmt.getUpdateCount();
-                System.out.println("Query executed successfully. " + updateCount + " rows affected.");
-            }
-        } catch (SQLException e) {
-            System.out.println("Error executing query: " + e.getMessage());
-        }
+        db.executeAndDisplay(sql);
     }
 
+    /**
+     * Get the database connection object
+     */
+    public DatabaseConnection getDatabase() {
+        return db;
+    }
 
-    public static void main(String[] args)
-    {
-
-        // Create new Application
-        App a = new App();
+    /**
+     * Main method - runs the reporting system
+     */
+    public static void main(String[] args) {
+        // Create application
+        App app = new App();
 
         // Connect to database
-        a.connect();
+        // Change to false when running in Docker: app.connect(false);
+        app.connect(false);
 
-        String sql = countryReport.getScope();
+        // Create report manager with the database connection
+        ReportManager manager = new ReportManager(app.getDatabase());
 
-        // Execute and display
-        a.executeAndDisplay(sql);
+//        // Generate reports based on user input
+//        manager.generateReportFromUserInput();
+
+        // Non-interactive: generate all reports, then disconnect and exit
+        manager.generateAllReports();
 
         // Disconnect from database
-        a.disconnect();
-
-
-        /*
-        countryReport.getScope();
-        try
-        {
-            // Load Database driver
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        }
-        catch (ClassNotFoundException e)
-        {
-            System.out.println("Could not load SQL driver");
-            System.exit(-1);
-        }
-
-        // Connection to the database
-        Connection con = null;
-        int retries = 100;
-        for (int i = 0; i < retries; ++i)
-        {
-            System.out.println("Connecting to database...");
-            try
-            {
-                // Wait a bit for db to start
-                Thread.sleep(1000);
-                // Connect to database
-                con = DriverManager.getConnection("jdbc:mysql://db:3306/world?useSSL=false&allowPublicKeyRetrieval=true", "root", "example");
-                System.out.println("Successfully connected");
-                // Wait a bit
-                Thread.sleep(1000);
-                // Exit for loop
-                break;
-            }
-            catch (SQLException sqle)
-            {
-                System.out.println("Failed to connect to database attempt " + Integer.toString(i));
-                System.out.println(sqle.getMessage());
-            }
-            catch (InterruptedException ie)
-            {
-                System.out.println("Thread interrupted? Should not happen.");
-            }
-        }
-
-        if (con != null)
-        {
-            try
-            {
-                // Close connection
-                con.close();
-            }
-            catch (Exception e)
-            {
-                System.out.println("Error closing connection to database");
-            }
-        }*/
-
-
+        app.disconnect();
     }
 }
