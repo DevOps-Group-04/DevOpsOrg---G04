@@ -5,5 +5,5 @@ Proposing features - discuss with team members first. If ageed upon, create a ca
 Branches - new features must be done in a new branch titled 'feature/[name]'. Once complete, merge into the Develop branch.  
 Developing directly to the Develop branch is not recomended. Release and Master must NOT be developed in.
 
-Testing - please carry out unit testing alongside your work. Thurthermore, integration testing must be carried out,
+Testing - please carry out unit testing alongside your work. Furthermore, integration testing must be carried out,
   this is not required for every change but when your code affects multiple components.
