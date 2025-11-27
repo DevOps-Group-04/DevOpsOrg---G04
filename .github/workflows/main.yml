@@ -1,34 +1,9 @@
-#name: A workflow for my Hello World App
-#on: push
-#
-#jobs:
-#  build:
-#    name: Hello world action
-#    runs-on: ubuntu-22.04
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        with:
-#          submodules: recursive
-#      - name: Set up JDK 17
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: '17'
-#          distribution: 'adopt'
-#      - name: Package with Maven
-#        run: mvn package
-#      - name: Build Docker Image
-#        run: docker build -t devopsimage .
-#      - name: Run image
-#        run: docker run --name devopscontainer devopsimage
-#      - name: view logs
-#        run: docker logs devopscontainer
-#      - name: Run Docker compose
-#        run: docker-compose up --abort-on-container-exit
+name: Build, Test, and Release
 
-name: Build and Test with Docker Compose
-
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   unit-tests:
@@ -122,47 +97,86 @@ jobs:
           path: target/surefire-reports
 
   build:
-    name: Build and Run Containers
+    name: Build Artifacts
     runs-on: ubuntu-22.04
     needs: [unit-tests, integration-tests]
-
+    outputs:
+      version: ${{ steps.read_version.outputs.version }}
     steps:
-      # Check out repository
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
-      # Set up Java (Temurin 17)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Build JAR file with Maven
-      - name: Package with Maven
+      - name: Read version from Maven POM
+        id: read_version
+        run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:3.5.1:exec)" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if version is SNAPSHOT
+        run: |
+          if [[ "${{ steps.read_version.outputs.version }}" == *"-SNAPSHOT" ]]; then
+            echo "Refusing to release SNAPSHOT version: ${{ steps.read_version.outputs.version }}"
+            exit 1
+          fi
+
+      - name: Build package
         run: mvn -B clean package
 
-      # Set up Docker Buildx (optional)
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            target/*.jar
+            target/*.zip
+            target/*.tar.gz
+          if-no-files-found: error
 
-      # Confirm Docker & Compose versions
-      - name: Check Docker installation
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+
+      - name: Create tag if missing
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker --version
-          docker compose version
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+          fi
 
-      # Build Docker images (app + db)
-      - name: Build Docker Compose services
-        run: docker compose build
-
-      # Run containers (will exit when app stops)
-      - name: Run Docker Compose
-        run: docker compose up --abort-on-container-exit
-
-      # View logs after containers stop (helpful for debugging)
-      - name: View logs
-        if: always()
-        run: docker compose logs
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Release v${{ needs.build.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
