@@ -1,0 +1,20 @@
+New Structure:
+1. DatabaseConnection.java - Handles all database operations
+
+connect(boolean useLocal) - Connects to MySQL (local or Docker)
+disconnect() - Closes connection
+executeAndDisplay(String sql) - Executes queries and prints formatted results
+Includes retry logic and proper error handling
+
+2. ReportManager.java - Updated main coordinator
+
+Now accepts a DatabaseConnection object
+generateAllReports() executes all 32 reports in a loop against the database
+Displays progress with report numbers and descriptions
+Includes a nice menu system for user selection
+
+3. App.java - Backward-compatible entry point
+
+Maintains your original structure
+Can be run as the main class
+Creates DatabaseConnection and ReportManager instances

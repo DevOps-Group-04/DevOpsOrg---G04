@@ -1,23 +1,213 @@
-name: A workflow for my Hello World App
-on: push
+name: Build, Test, and Release
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
-  build:
-    name: Hello world action
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
         with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'adopt'
-      - name: Package with Maven
-        run: mvn package
-      - name: Build Docker Image
-        run: docker build -t devopsimage .
-      - name: Run image
-        run: docker run --name devopscontainer devopsimage
-      - name: view logs
-        run: docker logs devopscontainer
+
+      - name: Run unit tests (exclude *IT)
+        run: mvn -B -Dtest='*UT, *Test' -DfailIfNoTests=false test
+
+      - name: Display surefire test reports
+        if: always()
+        run: |
+          echo "==== UNIT TEST REPORTS ===="
+          find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \; || true
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: target/surefire-reports
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-22.04
+
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: example
+          MYSQL_DATABASE: world
+        ports:
+          - 33060:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Wait for MySQL readiness
+        run: |
+          for i in {1..60}; do
+            if mysql -h 127.0.0.1 -P 33060 -uroot -pexample -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MySQL is ready"; break
+            fi
+            echo "Waiting for MySQL... ($i/60)"
+            sleep 2
+          done
+
+      - name: Load world schema/data
+        run: mysql -h 127.0.0.1 -P 33060 -uroot -pexample < db/world.sql
+
+      - name: Run integration tests only (*IT)
+        run: mvn -B -Dtest='*IT' -DfailIfNoTests=false test
+
+      - name: Display surefire test reports
+        if: always()
+        run: |
+          echo "==== INTEGRATION TEST REPORTS ===="
+          find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \; || true
+
+      - name: Upload integration test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
+          path: target/surefire-reports
+
+  build:
+    name: Build Artifacts
+    runs-on: ubuntu-22.04
+    needs: [unit-tests, integration-tests]
+    outputs:
+      version: ${{ steps.read_version.outputs.version }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Read version from Maven POM
+        id: read_version
+        run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:3.5.1:exec)" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if version is SNAPSHOT
+        run: |
+          if [[ "${{ steps.read_version.outputs.version }}" == *"-SNAPSHOT" ]]; then
+            echo "Refusing to release SNAPSHOT version: ${{ steps.read_version.outputs.version }}"
+            exit 1
+          fi
+
+      - name: Build package
+        run: mvn -B clean package
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            target/*.jar
+            target/*.zip
+            target/*.tar.gz
+          if-no-files-found: error
+
+  run-app-compose:
+    name: Run App via Docker Compose
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build package for container
+        run: mvn -B -DskipTests clean package
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and run with Docker Compose
+        run: |
+          docker compose build
+          docker compose up --abort-on-container-exit
+
+      - name: Compose logs
+        if: always()
+        run: docker compose logs
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    needs: [build, run-app-compose]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+
+      - name: Create tag if missing
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Release v${{ needs.build.outputs.version }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

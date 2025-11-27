@@ -1,17 +1,75 @@
 package com.napier.sem;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+/**
+ * Main application entry point
+ * This class provides backward compatibility with the original App structure
+ */
 public class App {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!\n");
 
-        for (int i = 1; i <= 4; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+    private DatabaseConnection db;
+
+    public App() {
+        this.db = new DatabaseConnection();
+    }
+
+    /**
+     * Connect to the MySQL database
+     * Uses local connection by default
+     */
+    public void connect() {
+        connect(true);
+    }
+
+    /**
+     * Connect to the MySQL database
+     * @param useLocal true for local connection, false for Docker
+     */
+    public void connect(boolean useLocal) {
+        db.connect(useLocal);
+    }
+
+    /**
+     * Disconnect from the MySQL database
+     */
+    public void disconnect() {
+        db.disconnect();
+    }
+
+    /**
+     * Execute a query and display results
+     */
+    public void executeAndDisplay(String sql) {
+        db.executeAndDisplay(sql);
+    }
+
+    /**
+     * Get the database connection object
+     */
+    public DatabaseConnection getDatabase() {
+        return db;
+    }
+
+    /**
+     * Main method - runs the reporting system
+     */
+    public static void main(String[] args) {
+        // Create application
+        App app = new App();
+
+        // Connect to database
+        // Change to false when running in Docker: app.connect(false);
+        app.connect(false);
+
+        // Create report manager with the database connection
+        ReportManager manager = new ReportManager(app.getDatabase());
+
+//        // Generate reports based on user input
+//        manager.generateReportFromUserInput();
+
+        // Non-interactive: generate all reports, then disconnect and exit
+        manager.generateAllReports();
+
+        // Disconnect from database
+        app.disconnect();
     }
 }
