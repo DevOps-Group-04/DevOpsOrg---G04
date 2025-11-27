@@ -173,7 +173,7 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
-    needs: build
+    needs: [build, run-app-compose]
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
