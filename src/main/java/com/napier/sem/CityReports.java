@@ -11,7 +11,7 @@ public class CityReports {
     private static final String DEFAULT_DISTRICT = "Shanghai";
 
     /**
-     * All cities in the world organized by largest population to smallest
+     * All cities in the world organised by largest population to smallest
      */
     public static String allCitiesWorld() {
         return """
@@ -26,7 +26,7 @@ public class CityReports {
     }
 
     /**
-     * All cities in a continent organized by largest population to smallest
+     * All cities in a continent organised by largest population to smallest
      * Default continent: Asia
      */
     public static String allCitiesContinent() {
@@ -43,7 +43,7 @@ public class CityReports {
     }
 
     /**
-     * All cities in a region organized by largest population to smallest
+     * All cities in a region organised by largest population to smallest
      * Default region: Eastern Asia
      */
     public static String allCitiesRegion() {
@@ -60,7 +60,7 @@ public class CityReports {
     }
 
     /**
-     * All cities in a country organized by largest population to smallest
+     * All cities in a country organised by largest population to smallest
      * Default country: China
      */
     public static String allCitiesCountry() {
@@ -77,7 +77,7 @@ public class CityReports {
     }
 
     /**
-     * All cities in a district organized by largest population to smallest
+     * All cities in a district organised by largest population to smallest
      * Default district: Shanghai
      */
     public static String allCitiesDistrict() {
