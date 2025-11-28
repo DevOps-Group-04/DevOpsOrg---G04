@@ -3,7 +3,7 @@ package com.napier.sem;
 import java.util.Scanner;
 
 /**
- * Main report manager that coordinates all report generation
+ * Main report manager that coordinates all report generation - alternative method of report generation using command line input
  */
 public class ReportManager {
 
@@ -14,92 +14,92 @@ public class ReportManager {
         this.db = db;
     }
 
-    /**
-     * Main entry point
-     */
-    public static void main(String[] args) {
-        // Create database connection
-        DatabaseConnection db = new DatabaseConnection();
+//    /**
+//     * Main entry point
+//     */
+//    public static void main(String[] args) {
+//        // Create database connection
+//        DatabaseConnection db = new DatabaseConnection();
+//
+//        // Connect to database (true = local, false = Docker)
+//        // Change to false when running in Docker environment
+//        db.connect(false);
+//
+//        // Create report manager
+//        ReportManager manager = new ReportManager(db);
+//
+//        // Get user input and generate reports
+//        manager.generateAllReports();
+//
+//        // Disconnect from database
+//        db.disconnect();
+//    }
 
-        // Connect to database (true = local, false = Docker)
-        // Change to false when running in Docker environment
-        db.connect(false);
-
-        // Create report manager
-        ReportManager manager = new ReportManager(db);
-
-        // Get user input and generate reports
-        manager.generateAllReports();
-
-        // Disconnect from database
-        db.disconnect();
-    }
-
-    /**
-     * Get user input and generate the appropriate report
-     */
-    public void generateReportFromUserInput() {
-        Scanner input = new Scanner(System.in);
-        boolean isValid = false;
-
-        while (!isValid) {
-            try {
-                System.out.println("\n" + "=".repeat(80));
-                System.out.println("WORLD DATABASE REPORTING SYSTEM");
-                System.out.println("=".repeat(80));
-                System.out.println("\nAvailable Reports:");
-                System.out.println("  1-6:   Country Reports");
-                System.out.println("  7-16:  City Reports");
-                System.out.println("  17-22: Capital City Reports");
-                System.out.println("  23-25: Population Distribution Reports");
-                System.out.println("  26-31: Specific Population Queries");
-                System.out.println("  32:    Language Speaker Statistics");
-                System.out.println("\nOptions:");
-                System.out.println("  - Press ENTER to generate all 32 reports");
-                System.out.println("  - Enter a number (1-32) for a specific report");
-                System.out.println("  - Enter 'number_limit' (e.g., '4_50') for top N reports");
-                System.out.println("=".repeat(80));
-                System.out.print("\nYour choice: ");
-
-                String userInput = input.nextLine().trim();
-
-                // Handle empty input - run all reports
-                if (userInput.isEmpty()) {
-                    System.out.println("\nGenerating all reports with limit of " + DEFAULT_LIMIT + "...");
-                    generateAllReports();
-                    return;
-                }
-
-                // Parse input
-                int scopeID;
-                int parameter = -1;
-
-                if (userInput.contains("_")) {
-                    String[] parts = userInput.split("_");
-                    if (parts.length == 2) {
-                        scopeID = Integer.parseInt(parts[0]);
-                        parameter = Integer.parseInt(parts[1]);
-                    } else {
-                        System.out.println("Invalid format. Use something like '6_5'.");
-                        continue;
-                    }
-                } else {
-                    scopeID = Integer.parseInt(userInput);
-                }
-
-                if (scopeID >= 1 && scopeID <= 32) {
-                    String sql = getReportSQL(scopeID, parameter);
-                    db.executeAndDisplay(sql, scopeID);
-                    isValid = true;
-                } else {
-                    System.out.println("Invalid input — scopeID must be between 1 and 32.");
-                }
-
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input — please enter a number or 'number_number' format.");
-            }
-        }
-    }
+//    /**
+//     * Get user input and generate the appropriate report
+//     */
+//    public void generateReportFromUserInput() {
+//        Scanner input = new Scanner(System.in);
+//        boolean isValid = false;
+//
+//        while (!isValid) {
+//            try {
+//                System.out.println("\n" + "=".repeat(80));
+//                System.out.println("WORLD DATABASE REPORTING SYSTEM");
+//                System.out.println("=".repeat(80));
+//                System.out.println("\nAvailable Reports:");
+//                System.out.println("  1-6:   Country Reports");
+//                System.out.println("  7-16:  City Reports");
+//                System.out.println("  17-22: Capital City Reports");
+//                System.out.println("  23-25: Population Distribution Reports");
+//                System.out.println("  26-31: Specific Population Queries");
+//                System.out.println("  32:    Language Speaker Statistics");
+//                System.out.println("\nOptions:");
+//                System.out.println("  - Press ENTER to generate all 32 reports");
+//                System.out.println("  - Enter a number (1-32) for a specific report");
+//                System.out.println("  - Enter 'number_limit' (e.g., '4_50') for top N reports");
+//                System.out.println("=".repeat(80));
+//                System.out.print("\nYour choice: ");
+//
+//                String userInput = input.nextLine().trim();
+//
+//                // Handle empty input - run all reports
+//                if (userInput.isEmpty()) {
+//                    System.out.println("\nGenerating all reports with limit of " + DEFAULT_LIMIT + "...");
+//                    generateAllReports();
+//                    return;
+//                }
+//
+//                // Parse input
+//                int scopeID;
+//                int parameter = -1;
+//
+//                if (userInput.contains("_")) {
+//                    String[] parts = userInput.split("_");
+//                    if (parts.length == 2) {
+//                        scopeID = Integer.parseInt(parts[0]);
+//                        parameter = Integer.parseInt(parts[1]);
+//                    } else {
+//                        System.out.println("Invalid format. Use something like '6_5'.");
+//                        continue;
+//                    }
+//                } else {
+//                    scopeID = Integer.parseInt(userInput);
+//                }
+//
+//                if (scopeID >= 1 && scopeID <= 32) {
+//                    String sql = getReportSQL(scopeID, parameter);
+//                    db.executeAndDisplay(sql, scopeID);
+//                    isValid = true;
+//                } else {
+//                    System.out.println("Invalid input — scopeID must be between 1 and 32.");
+//                }
+//
+//            } catch (NumberFormatException e) {
+//                System.out.println("Invalid input — please enter a number or 'number_number' format.");
+//            }
+//        }
+//    }
 
     /**
      * Get SQL for a specific report

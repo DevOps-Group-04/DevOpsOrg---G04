@@ -10,8 +10,8 @@ public class DatabaseConnection {
     private Connection con = null;
 
     // Database configuration defaults
-    private static final String DB_LOCAL = "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false";
-    private static final String DB_DOCKER = "jdbc:mysql://db:3306/world?allowPublicKeyRetrieval=true&useSSL=false";
+    private static final String DB_LOCAL = "jdbc:mysql://localhost:33060/world?allowPublicKeyRetrieval=true&useSSL=false";      // Local URL
+    private static final String DB_DOCKER = "jdbc:mysql://db:3306/world?allowPublicKeyRetrieval=true&useSSL=false";             // Docker URL
     private static final String DB_USER_DEFAULT = "root";
     private static final String DB_PASSWORD_DEFAULT = "example";
 
@@ -22,6 +22,9 @@ public class DatabaseConnection {
         return "jdbc:mysql://" + host + ":" + port + "/" + db + "?allowPublicKeyRetrieval=true&useSSL=false";
     }
 
+    /**
+     * Return username and password for database connection
+     */
     private String dbUser() {
         return System.getenv().getOrDefault("MYSQL_USER", DB_USER_DEFAULT);
     }
