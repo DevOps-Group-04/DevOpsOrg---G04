@@ -1,35 +1,43 @@
+# Workflow name shown in GitHub Actions UI
 name: Build, Test, and Release
 
+# Triggers: on push to master and manual trigger
 on:
   push:
     branches: [ master ]
   workflow_dispatch:
 
 jobs:
+  # Job: run unit tests without integration tests
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-22.04
     steps:
+      # Checkout repository (with submodules) to runner
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # Install Temurin JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # Run Maven unit tests (exclude *IT classes)
       - name: Run unit tests (exclude *IT)
         run: mvn -B -Dtest='*UT, *Test' -DfailIfNoTests=false test
 
+      # Always print surefire reports for debugging
       - name: Display surefire test reports
         if: always()
         run: |
           echo "==== UNIT TEST REPORTS ===="
           find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \; || true
 
+      # Upload unit test reports as an artifact
       - name: Upload unit test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,11 +45,13 @@ jobs:
           name: unit-test-reports
           path: target/surefire-reports
 
+  # Job: run integration tests with MySQL service
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-22.04
 
     services:
+      # Spin up a MySQL 8 container for tests
       db:
         image: mysql:8.0
         env:
@@ -49,6 +59,7 @@ jobs:
           MYSQL_DATABASE: world
         ports:
           - 33060:3306
+        # Healthcheck to wait until MySQL is accepting connections
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
           --health-interval=10s
@@ -56,17 +67,20 @@ jobs:
           --health-retries=30
 
     steps:
+      # Checkout repository (with submodules) to runner
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # Install Temurin JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # Poll until MySQL is ready to accept connections
       - name: Wait for MySQL readiness
         run: |
           for i in {1..60}; do
@@ -77,18 +91,22 @@ jobs:
             sleep 2
           done
 
+      # Load sample schema/data for integration tests
       - name: Load world schema/data
         run: mysql -h 127.0.0.1 -P 33060 -uroot -pexample < db/world.sql
 
+      # Run only integration tests (*IT pattern)
       - name: Run integration tests only (*IT)
         run: mvn -B -Dtest='*IT' -DfailIfNoTests=false test
 
+      # Always print surefire reports for debugging
       - name: Display surefire test reports
         if: always()
         run: |
           echo "==== INTEGRATION TEST REPORTS ===="
           find target/surefire-reports -type f -name "*.txt" -print -exec cat {} \; || true
 
+      # Upload integration test reports as an artifact
       - name: Upload integration test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -96,6 +114,7 @@ jobs:
           name: integration-test-reports
           path: target/surefire-reports
 
+  # Job: build distributable artifacts after tests pass
   build:
     name: Build Artifacts
     runs-on: ubuntu-22.04
@@ -103,22 +122,26 @@ jobs:
     outputs:
       version: ${{ steps.read_version.outputs.version }}
     steps:
+      # Checkout repository with full history (for tagging)
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
+      # Install Temurin JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # Read project version from Maven POM into an output
       - name: Read version from Maven POM
         id: read_version
         run: echo "version=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive org.codehaus.mojo:exec-maven-plugin:3.5.1:exec)" >> "$GITHUB_OUTPUT"
 
+      # Prevent releasing SNAPSHOT versions
       - name: Fail if version is SNAPSHOT
         run: |
           if [[ "${{ steps.read_version.outputs.version }}" == *"-SNAPSHOT" ]]; then
@@ -126,9 +149,11 @@ jobs:
             exit 1
           fi
 
+      # Build the project and run all tests
       - name: Build package
         run: mvn -B clean package
 
+      # Upload built artifacts for later jobs/releases
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -139,53 +164,64 @@ jobs:
             target/*.tar.gz
           if-no-files-found: error
 
+  # Job: build image and run app using Docker Compose
   run-app-compose:
     name: Run App via Docker Compose
     runs-on: ubuntu-22.04
     needs: build
     steps:
+      # Checkout repository (with submodules)
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # Install Temurin JDK 17 (for Maven build)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # Build package for container without running tests
       - name: Build package for container
         run: mvn -B -DskipTests clean package
 
+      # Enable Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Build and start services; stop when containers exit
       - name: Build and run with Docker Compose
         run: |
           docker compose build
           docker compose up --abort-on-container-exit
 
+      # Always show compose logs to aid debugging
       - name: Compose logs
         if: always()
         run: docker compose logs
 
+  # Job: create a GitHub release with artifacts, after build and compose run
   release:
     name: Create GitHub Release
     runs-on: ubuntu-22.04
     needs: [build, run-app-compose]
     steps:
+      # Checkout repo with full history (needed for tags)
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Download previously uploaded build artifacts into dist/
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           path: dist
 
+      # Create and push tag if it doesn't exist
       - name: Create tag if missing
         env:
           VERSION: ${{ needs.build.outputs.version }}
@@ -200,6 +236,7 @@ jobs:
             git push origin "v${VERSION}"
           fi
 
+      # Publish a GitHub Release with the artifacts in dist/**
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

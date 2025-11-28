@@ -12,13 +12,13 @@ public class App {
         this.db = new DatabaseConnection();
     }
 
-    /**
-     * Connect to the MySQL database
-     * Uses local connection by default
-     */
-    public void connect() {
-        connect(true);
-    }
+//    /**
+//     * Connect to the MySQL database
+//     * Uses local connection by default
+//     */
+//    public void connect() {
+//        connect(true);
+//    }
 
     /**
      * Connect to the MySQL database
@@ -35,12 +35,12 @@ public class App {
         db.disconnect();
     }
 
-    /**
-     * Execute a query and display results
-     */
-    public void executeAndDisplay(String sql) {
-        db.executeAndDisplay(sql);
-    }
+//    /**
+//     * Execute a query and display results
+//     */
+//    public void executeAndDisplay(String sql) {
+//        db.executeAndDisplay(sql);
+//    }
 
     /**
      * Get the database connection object
